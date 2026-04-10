@@ -1,20 +1,19 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, ArrowLeftRight, Bot, Wallet, Bell,
-  LogOut, ChevronRight, Zap, Menu, X,
+  LogOut, ChevronRight, Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",      icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/transactions",   icon: ArrowLeftRight,  label: "Transactions" },
-  { href: "/assistant",      icon: Bot,             label: "AI Assistant" },
-  { href: "/budget",         icon: Wallet,          label: "Budget" },
-  { href: "/notifications",  icon: Bell,            label: "Notifications" },
+  { href: "/dashboard",     icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/transactions",  icon: ArrowLeftRight,  label: "Transactions" },
+  { href: "/assistant",     icon: Bot,             label: "AI Assistant" },
+  { href: "/budget",        icon: Wallet,          label: "Budget" },
+  { href: "/notifications", icon: Bell,            label: "Notifications" },
 ];
 
 export default function Sidebar() {
@@ -23,116 +22,111 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <>
-      {/* Desktop Sidebar */}
-      <motion.aside
-        animate={{ width: collapsed ? 72 : 240 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="hidden md:flex flex-col h-screen sticky top-0 glass border-r border-white/5 overflow-hidden shrink-0"
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-3 p-4 pt-6 border-b border-white/5">
-          <div className="w-9 h-9 rounded-xl bg-ai-gradient flex items-center justify-center shrink-0 shadow-glow pulse-glow">
-            <Zap size={18} className="text-white" />
+    <aside
+      style={{ width: collapsed ? 88 : 280 }}
+      className="hidden md:flex flex-col h-screen sticky top-0 bg-background/50 backdrop-blur-2xl border-r border-white/5 overflow-hidden shrink-0 transition-all duration-500 ease-in-out z-40"
+    >
+      {/* Logo Section */}
+      <div className="flex items-center gap-4 p-6 pt-8">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 shadow-2xl shadow-primary/20 rotate-3 hover:rotate-0 transition-transform duration-500">
+          <Zap size={24} className="text-white fill-white/20" />
+        </div>
+        {!collapsed && (
+          <div className="flex flex-col">
+            <span className="font-display font-bold text-xl text-foreground tracking-tight whitespace-nowrap fade-in">
+              Fintrixia
+            </span>
+            <span className="text-[10px] font-bold text-primary/80 uppercase tracking-widest fade-in">
+              AI Powered
+            </span>
           </div>
-          <AnimatePresence mode="wait">
-            {!collapsed && (
-              <motion.span
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                className="font-bold text-lg gradient-text whitespace-nowrap"
+        )}
+      </div>
+
+      {/* Toggle Button */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="absolute top-8 right-[-12px] w-6 h-12 bg-surface-high border border-white/5 rounded-l-xl flex items-center justify-center text-muted-foreground hover:text-primary transition-colors z-50 shadow-xl"
+        aria-label="Toggle sidebar"
+      >
+        <ChevronRight
+          size={14}
+          className={`transition-transform duration-500 ${collapsed ? "" : "rotate-180"}`}
+        />
+      </button>
+
+      {/* Navigation */}
+      <nav className="flex-1 py-8 space-y-2 px-4 overflow-y-auto custom-scrollbar">
+        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+          const isActive = pathname === href || pathname.startsWith(href + "/");
+          return (
+            <Link key={href} href={href}>
+              <div
+                className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all duration-300 relative group ${
+                  isActive
+                    ? "bg-primary/10 text-primary border border-primary/20 shadow-lg shadow-primary/5"
+                    : "text-muted-foreground hover:text-foreground hover:bg-surface-high/50 border border-transparent"
+                }`}
               >
-                Fintrixia
-              </motion.span>
-            )}
-          </AnimatePresence>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="ml-auto p-1 rounded-lg hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-colors"
-          >
-            <ChevronRight
-              size={16}
-              className={`transition-transform duration-300 ${collapsed ? "" : "rotate-180"}`}
-            />
+                <Icon size={20} className={`shrink-0 transition-transform duration-300 group-hover:scale-110 ${isActive ? "text-primary" : ""}`} />
+                {!collapsed && (
+                  <span className="text-sm font-semibold tracking-wide whitespace-nowrap fade-in">
+                    {label}
+                  </span>
+                )}
+                {isActive && (
+                  <div className="absolute left-[-16px] top-1/4 bottom-1/4 w-1.5 rounded-r-full bg-primary shadow-[0_0_15px_rgba(59,130,246,0.8)]" />
+                )}
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Upgrade Banner (Placeholder for aesthetic) */}
+      {!collapsed && (
+        <div className="mx-4 mb-6 p-4 rounded-3xl bg-gradient-to-br from-surface-high to-surface-low border border-white/5 relative overflow-hidden group">
+          <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/10 blur-3xl group-hover:bg-primary/20 transition-all" />
+          <p className="text-xs font-bold text-foreground mb-1 relative">Go Premium</p>
+          <p className="text-[10px] text-muted-foreground mb-3 relative">Unlock advanced AI insights and deep analytics.</p>
+          <button className="w-full py-2 bg-primary/10 hover:bg-primary text-primary hover:text-white rounded-xl text-[10px] font-bold transition-all duration-300 border border-primary/20">
+            Upgrade Now
           </button>
         </div>
+      )}
 
-        {/* Nav */}
-        <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
-          {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-            const isActive = pathname === href || pathname.startsWith(href + "/");
-            return (
-              <Link key={href} href={href}>
-                <motion.div
-                  whileHover={{ x: 4 }}
-                  whileTap={{ scale: 0.97 }}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 relative group ${
-                    isActive
-                      ? "bg-accent/15 text-accent"
-                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNav"
-                      className="absolute inset-0 bg-accent/10 rounded-xl border border-accent/20"
-                    />
-                  )}
-                  <Icon size={18} className="shrink-0 relative z-10" />
-                  <AnimatePresence mode="wait">
-                    {!collapsed && (
-                      <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="text-sm font-medium relative z-10 whitespace-nowrap"
-                      >
-                        {label}
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User + Logout */}
-        <div className="p-3 border-t border-white/5">
-          <div className={`flex items-center gap-3 p-2 rounded-xl ${collapsed ? "justify-center" : ""}`}>
+      {/* User Footer */}
+      <div className="p-4 border-t border-white/5 bg-surface-low/30">
+        <div className={`flex items-center gap-4 p-2 rounded-2xl transition-all ${collapsed ? "justify-center" : ""}`}>
+          <div className="relative shrink-0">
             {user?.picture ? (
-              <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full ring-2 ring-accent/30 shrink-0" />
+              <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-2xl object-cover ring-2 ring-primary/20" />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-ai-gradient flex items-center justify-center shrink-0 text-xs font-bold text-white">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-sm font-bold text-white shadow-xl">
                 {user?.name?.[0] || "U"}
               </div>
             )}
-            <AnimatePresence mode="wait">
-              {!collapsed && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex-1 min-w-0"
-                >
-                  <p className="text-xs font-semibold text-slate-200 truncate">{user?.name}</p>
-                  <p className="text-xs text-slate-500 truncate">{user?.email}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {!collapsed && (
-              <button
-                onClick={logout}
-                className="p-1.5 rounded-lg hover:bg-danger/10 text-slate-500 hover:text-danger transition-all"
-                title="Logout"
-              >
-                <LogOut size={14} />
-              </button>
-            )}
+            <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-success border-2 border-background rounded-full" />
           </div>
+          
+          {!collapsed && (
+            <div className="flex-1 min-w-0 fade-in">
+              <p className="text-xs font-bold text-foreground truncate leading-none mb-1">{user?.name}</p>
+              <p className="text-[10px] text-muted-foreground truncate leading-none">Pro Plan</p>
+            </div>
+          )}
+          
+          {!collapsed && (
+            <button
+              onClick={logout}
+              className="p-2.5 rounded-xl hover:bg-danger/10 text-muted-foreground hover:text-danger transition-all duration-300 group"
+              title="Logout"
+            >
+              <LogOut size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+          )}
         </div>
-      </motion.aside>
-    </>
+      </div>
+    </aside>
   );
 }

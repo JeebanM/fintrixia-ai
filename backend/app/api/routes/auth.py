@@ -17,12 +17,12 @@ async def google_login(body: GoogleTokenRequest):
     db = get_db()
 
     # Upsert user in MongoDB
-    existing = await db.users.find_one({"email": user_info["email"]})
+    existing = await db.users.find_one({"google_id": user_info["google_id"]})
     if existing:
         user_id = str(existing["_id"])
         await db.users.update_one(
             {"_id": existing["_id"]},
-            {"$set": {"name": user_info["name"], "picture": user_info["picture"]}}
+            {"$set": {"name": user_info["name"], "picture": user_info["picture"], "email": user_info["email"]}}
         )
     else:
         from datetime import datetime

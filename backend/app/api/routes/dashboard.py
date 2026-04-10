@@ -18,7 +18,7 @@ async def get_summary(current_user: dict = Depends(get_current_user)):
     txns_30d = await db.transactions.find({
         "user_id": user_id, "status": "success",
         "timestamp": {"$gte": month_start}
-    }).to_list(1000)
+    }).to_list(20)
 
     this_week_txns = [t for t in txns_30d if t["timestamp"] >= this_week]
     last_week_txns = [t for t in txns_30d if last_week_start <= t["timestamp"] < this_week]
@@ -59,7 +59,7 @@ async def category_breakdown(current_user: dict = Depends(get_current_user)):
         "user_id": current_user["user_id"],
         "status": "success",
         "timestamp": {"$gte": datetime.utcnow() - timedelta(days=30)}
-    }).to_list(1000)
+    }).to_list(20)
 
     cat_totals = {}
     for t in txns:
@@ -76,7 +76,7 @@ async def spending_over_time(current_user: dict = Depends(get_current_user)):
         "user_id": current_user["user_id"],
         "status": "success",
         "timestamp": {"$gte": datetime.utcnow() - timedelta(days=30)}
-    }).to_list(1000)
+    }).to_list(20)
 
     daily = {}
     for t in txns:

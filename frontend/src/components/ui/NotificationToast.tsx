@@ -1,7 +1,7 @@
 "use client";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
 import { X, CheckCircle, AlertTriangle, XCircle, Info } from "lucide-react";
-import { useEffect } from "react";
+import { ANIMATION_DURATION } from "@/lib/animations";
 
 interface ToastProps {
   id: string;
@@ -26,19 +26,29 @@ const borders = {
 };
 
 export default function NotificationToast({ id, type, title, message, onDismiss }: ToastProps) {
+  const [visible, setVisible] = useState(true);
+
+  // Auto-dismiss
   useEffect(() => {
-    const t = setTimeout(() => onDismiss(id), 4000);
+    const t = setTimeout(() => setVisible(false), 4000);
     return () => clearTimeout(t);
-  }, [id, onDismiss]);
+  }, []);
+
+  // Delay actual unmount from parent
+  useEffect(() => {
+    if (!visible) {
+      const t = setTimeout(() => onDismiss(id), ANIMATION_DURATION);
+      return () => clearTimeout(t);
+    }
+  }, [visible, id, onDismiss]);
+
+  const handleDismiss = () => setVisible(false);
 
   return (
-    <motion.div
-      layout
-      initial={{ x: 120, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 120, opacity: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`glass p-4 w-80 border ${borders[type]} shadow-card`}
+    <div
+      className={`glass p-4 w-80 border ${borders[type]} shadow-card transition-all duration-300 ${
+        visible ? "animate-toast-enter" : "opacity-0 translate-x-full"
+      }`}
     >
       <div className="flex items-start gap-3">
         <div className="pt-0.5 shrink-0">{icons[type]}</div>
@@ -47,13 +57,13 @@ export default function NotificationToast({ id, type, title, message, onDismiss 
           <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{message}</p>
         </div>
         <button
-          onClick={() => onDismiss(id)}
+          onClick={handleDismiss}
           className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors"
         >
           <X size={14} />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -66,11 +76,9 @@ interface ToastContainerProps {
 export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-      <AnimatePresence mode="popLayout">
-        {toasts.map((t) => (
-          <NotificationToast key={t.id} {...t} onDismiss={onDismiss} />
-        ))}
-      </AnimatePresence>
+      {toasts.map((t) => (
+        <NotificationToast key={t.id} {...t} onDismiss={onDismiss} />
+      ))}
     </div>
   );
 }

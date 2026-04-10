@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 interface GlassCardProps {
@@ -10,27 +10,26 @@ interface GlassCardProps {
   onClick?: () => void;
 }
 
-export default function GlassCard({
+const GlassCard = ({
   children,
   className,
   glow = false,
   hover = false,
   onClick,
-}: GlassCardProps) {
+}: GlassCardProps) => {
   return (
-    <motion.div
+    <div
       className={cn(
-        "glass p-6",
-        glow && "glow-accent pulse-glow",
-        hover && "cursor-pointer",
+        "glass-panel",
+        glow && "before:absolute before:inset-0 before:bg-primary/5 before:blur-2xl before:-z-10",
+        hover && "cursor-pointer hover:scale-[1.01] hover:border-white/20 active:scale-[0.99] transition-all duration-300",
         className
       )}
-      whileHover={hover ? { scale: 1.02, y: -2 } : undefined}
-      whileTap={hover && onClick ? { scale: 0.98 } : undefined}
       onClick={onClick}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
       {children}
-    </motion.div>
+    </div>
   );
-}
+};
+
+export default React.memo(GlassCard);

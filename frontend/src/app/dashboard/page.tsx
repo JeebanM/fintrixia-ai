@@ -1,72 +1,73 @@
 "use client";
+import React from "react";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
-import { getDashboardSummary, getCategoryBreakdown, getSpendingOverTime, getTransactions, getInsights } from "@/lib/api";
+import { 
+  getDashboardSummary, 
+  getCategoryBreakdown, 
+  getSpendingOverTime, 
+  getTransactions, 
+  getInsights 
+} from "@/lib/api";
 import AppShell from "@/components/layout/AppShell";
 import Header from "@/components/layout/Header";
 import KPICard from "@/components/ui/KPICard";
 import InsightCard from "@/components/ui/InsightCard";
 import GlassCard from "@/components/ui/GlassCard";
-import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Area, AreaChart,
-} from "recharts";
-import { motion } from "framer-motion";
+import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import {
   IndianRupee, TrendingUp, TrendingDown, PiggyBank, Wallet,
-  ArrowRight, Plus,
+  ArrowRight, Plus, BarChart2, Target, Zap, Activity
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 
-const COLORS = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899"];
+// Dynamic imports for charts to prevent SSR/Memory issues
+const SpendingAreaChart = dynamic(
+  () => import("@/components/dashboard/DashboardCharts").then(mod => mod.SpendingAreaChart),
+  { ssr: false, loading: () => <div className="h-[250px] w-full bg-surface-high/20 animate-pulse rounded-3xl" /> }
+);
+
+const CategoryPieChart = dynamic(
+  () => import("@/components/dashboard/DashboardCharts").then(mod => mod.CategoryPieChart),
+  { ssr: false, loading: () => <div className="h-[250px] w-full bg-surface-high/20 animate-pulse rounded-3xl" /> }
+);
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Food: "#f59e0b", Fuel: "#ef4444", Shopping: "#6366f1",
-  Entertainment: "#8b5cf6", Travel: "#06b6d4", Health: "#22c55e",
-  Bills: "#f97316", Others: "#94a3b8",
+  Food: "#3b82f6", Fuel: "#f43f5e", Shopping: "#8b5cf6",
+  Entertainment: "#d946ef", Travel: "#06b6d4", Health: "#10b981",
+  Bills: "#f59e0b", Others: "#64748b",
 };
-
-function CategoryBadge({ category }: { category: string }) {
-  const color = CATEGORY_COLORS[category] || "#94a3b8";
-  return (
-    <span
-      className="text-xs font-medium px-2 py-0.5 rounded-full"
-      style={{ background: `${color}20`, color }}
-    >
-      {category}
-    </span>
-  );
-}
 
 export default function DashboardPage() {
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: () => getDashboardSummary().then((r) => r.data),
-    refetchInterval: 5000,
+    refetchInterval: 60000,
   });
 
   const { data: categories = [], isLoading: loadingCats } = useQuery({
     queryKey: ["category-breakdown"],
     queryFn: () => getCategoryBreakdown().then((r) => r.data),
-    refetchInterval: 5000,
+    refetchInterval: 60000,
   });
 
-  const { data: timeline = [], isLoading: loadingTimeline } = useQuery({
+  const { data: spendingHistory = [], isLoading: loadingHistory } = useQuery({
     queryKey: ["spending-over-time"],
     queryFn: () => getSpendingOverTime().then((r) => r.data),
-    refetchInterval: 5000,
+    refetchInterval: 60000,
   });
 
-  const { data: txnData } = useQuery({
-    queryKey: ["transactions", { limit: 5 }],
-    queryFn: () => getTransactions({ limit: 5 }).then((r) => r.data),
-    refetchInterval: 5000,
+  const { data: txnData, isLoading: loadingTxns } = useQuery({
+    queryKey: ["transactions", { limit: 6 }],
+    queryFn: () => getTransactions({ limit: 6 }).then((r) => r.data),
+    refetchInterval: 30000,
   });
 
-  const { data: insights = [] } = useQuery({
+  const { data: insights = [], isLoading: loadingInsights } = useQuery({
     queryKey: ["insights"],
     queryFn: () => getInsights().then((r) => r.data),
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const recentTxns = txnData?.transactions || [];
@@ -74,229 +75,210 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <Header
-        title="Dashboard"
-        subtitle={`Welcome back · ${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}`}
+        title="Command Center"
+        subtitle={`System Status: ${summary?.trend_direction === 'down' ? 'Optimized' : 'High Activity'}`}
       />
 
-      <div className="p-6 space-y-6">
-        {/* KPI Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard
-            label="Total Spend (30d)"
-            value={`₹${summary?.total_spend?.toLocaleString("en-IN") || "0"}`}
-            icon={<IndianRupee size={16} />}
-            color="accent"
-            trend={summary?.trend_direction === "up" ? "up" : "down"}
-            trendValue={`${Math.abs(summary?.trend_pct || 0)}%`}
-            subtext="vs last week"
-            loading={loadingSummary}
-          />
-          <KPICard
-            label="Budget Used"
-            value={`${summary?.budget_usage_pct || 0}%`}
-            icon={<Wallet size={16} />}
-            color={
-              (summary?.budget_usage_pct || 0) >= 100 ? "danger"
-              : (summary?.budget_usage_pct || 0) >= 80 ? "warning"
-              : "success"
-            }
-            subtext="of monthly limit"
-            loading={loadingSummary}
-          />
-          <KPICard
-            label="Savings Estimate"
-            value={`₹${summary?.savings?.toLocaleString("en-IN") || "0"}`}
-            icon={<PiggyBank size={16} />}
-            color="success"
-            subtext="budget − spent"
-            loading={loadingSummary}
-          />
-          <KPICard
-            label="This Week"
-            value={`₹${summary?.this_week_total?.toLocaleString("en-IN") || "0"}`}
-            icon={summary?.trend_direction === "up" ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-            color={summary?.trend_direction === "up" ? "danger" : "success"}
-            trend={summary?.trend_direction as any}
-            trendValue={`${Math.abs(summary?.trend_pct || 0)}%`}
-            subtext="vs last week"
-            loading={loadingSummary}
-          />
-        </div>
-
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Donut Chart */}
-          <GlassCard className="lg:col-span-2 space-y-4">
-            <h2 className="font-semibold text-slate-200 text-sm">Spending by Category</h2>
-            {loadingCats ? (
-              <div className="skeleton h-48 rounded-xl" />
-            ) : categories.length === 0 ? (
-              <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
-                No transactions yet
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={categories}
-                    dataKey="amount"
-                    nameKey="category"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={55}
-                    outerRadius={85}
-                    paddingAngle={3}
-                    strokeWidth={0}
-                  >
-                    {categories.map((entry: any, i: number) => (
-                      <Cell
-                        key={entry.category}
-                        fill={CATEGORY_COLORS[entry.category] || COLORS[i % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 }}
-                    formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, ""]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-            {/* Legend */}
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
-              {categories.slice(0, 5).map((c: any) => (
-                <div key={c.category} className="flex items-center gap-1.5 text-xs text-slate-400">
-                  <div className="w-2 h-2 rounded-full" style={{ background: CATEGORY_COLORS[c.category] || "#94a3b8" }} />
-                  {c.category}
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-
-          {/* Area Chart */}
-          <GlassCard className="lg:col-span-3 space-y-4">
-            <h2 className="font-semibold text-slate-200 text-sm">Spending Over Time (30 days)</h2>
-            {loadingTimeline ? (
-              <div className="skeleton h-48 rounded-xl" />
-            ) : (
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={timeline} margin={{ left: -20, right: 8, top: 4, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="spendGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: "#64748b", fontSize: 10 }}
-                    tickFormatter={(d) => d.slice(5)}
-                    interval={4}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: "#64748b", fontSize: 10 }}
-                    tickFormatter={(v) => `₹${v}`}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    contentStyle={{ background: "#0f172a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12 }}
-                    formatter={(v: any) => [`₹${Number(v).toLocaleString("en-IN")}`, "Spent"]}
-                    labelFormatter={(l) => format(new Date(l), "d MMM")}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    fill="url(#spendGrad)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#6366f1" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </GlassCard>
-        </div>
-
-        {/* Insights + Recent Transactions */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Insights */}
-          <div className="lg:col-span-2 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-slate-200 text-sm">AI Insights</h2>
-              <Link href="/assistant" className="text-xs text-accent hover:text-accent-hover flex items-center gap-1">
-                Ask AI <ArrowRight size={12} />
-              </Link>
-            </div>
-            {insights.length === 0 ? (
-              <div className="glass p-4 text-sm text-slate-500 text-center rounded-2xl">
-                Add transactions to see AI insights
-              </div>
-            ) : (
-              insights.map((insight: any, i: number) => (
-                <InsightCard key={i} {...insight} index={i} />
-              ))
-            )}
+      <main className="p-8 space-y-8">
+        <ErrorBoundary>
+          {/* Top Row: Hero Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <KPICard
+              label="Capital Flow"
+              value={`₹${summary?.total_spend?.toLocaleString("en-IN") || "0"}`}
+              icon={<Activity size={20} />}
+              color="accent"
+              trend={summary?.trend_direction === "up" ? "up" : "down"}
+              trendValue={`${Math.abs(summary?.trend_pct || 0)}%`}
+              subtext="vs prev cycle"
+              loading={loadingSummary}
+            />
+            <KPICard
+              label="Efficiency Index"
+              value={`${100 - (summary?.budget_usage_pct || 0)}%`}
+              icon={<Zap size={20} />}
+              color="success"
+              subtext="bandwidth remaining"
+              loading={loadingSummary}
+            />
+            <KPICard
+              label="Daily Burn"
+              value={`₹${Math.round((summary?.total_spend || 0) / 30).toLocaleString("en-IN")}`}
+              icon={<TrendingUp size={20} />}
+              color="warning"
+              subtext="projected velocity"
+              loading={loadingSummary}
+            />
+            <KPICard
+              label="Idle Reserves"
+              value={`₹${summary?.savings?.toLocaleString("en-IN") || "0"}`}
+              icon={<PiggyBank size={20} />}
+              color="success"
+              subtext="ready for deployment"
+              loading={loadingSummary}
+            />
           </div>
 
-          {/* Recent Transactions */}
-          <GlassCard className="lg:col-span-3 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-slate-200 text-sm">Recent Transactions</h2>
-              <Link href="/transactions" className="text-xs text-accent hover:text-accent-hover flex items-center gap-1">
-                View All <ArrowRight size={12} />
-              </Link>
-            </div>
+          {/* Middle Row: Visual Analytics */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <GlassCard className="lg:col-span-2 p-8 space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-display font-bold text-foreground">Spending Trajectory</h2>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">30 Day Real-time Flow</p>
+                </div>
+                <div className="flex items-center gap-4 bg-surface-high/50 px-4 py-2 rounded-2xl border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                    <span className="text-[10px] font-bold text-foreground uppercase tracking-wider">Expenditure</span>
+                  </div>
+                </div>
+              </div>
+              <div className="h-[300px]">
+                {loadingHistory ? (
+                  <div className="h-full w-full bg-surface-high/20 animate-pulse rounded-3xl" />
+                ) : (
+                  <SpendingAreaChart data={spendingHistory} />
+                )}
+              </div>
+            </GlassCard>
 
-            {recentTxns.length === 0 ? (
-              <div className="text-center py-8 space-y-3">
-                <p className="text-slate-500 text-sm">No transactions yet</p>
+            <div className="space-y-8">
+              <GlassCard className="p-8 space-y-8">
+                <h2 className="text-lg font-display font-bold text-foreground">Composition</h2>
+                <div className="h-[250px]">
+                  {loadingCats ? (
+                    <div className="h-full w-full bg-surface-high/20 animate-pulse rounded-3xl" />
+                  ) : (
+                    <CategoryPieChart data={categories} />
+                  )}
+                </div>
+              </GlassCard>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h2 className="text-sm font-display font-bold text-foreground uppercase tracking-widest">Neural Insights</h2>
+                  <Link href="/assistant" className="text-[10px] font-bold text-primary hover:text-accent transition-colors uppercase tracking-widest">
+                    AI Analysis
+                  </Link>
+                </div>
+                <div className="grid gap-4">
+                  {loadingInsights ? (
+                    [...Array(2)].map((_, i) => <div key={i} className="h-28 w-full bg-surface-high/20 animate-pulse rounded-3xl" />)
+                  ) : (
+                    insights.slice(0, 2).map((insight: any, i: number) => (
+                      <InsightCard key={i} {...insight} index={i} />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Row: Activity & Budget */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <GlassCard className="lg:col-span-3 p-8 space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-display font-bold text-foreground">Settlement Registry</h2>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Recent Network Activity</p>
+                </div>
                 <Link href="/transactions">
-                  <button className="btn-gradient px-4 py-2 text-sm flex items-center gap-2 mx-auto">
-                    <Plus size={14} /> Add Transaction
+                  <button className="px-6 py-2.5 bg-surface-high/50 hover:bg-primary hover:text-white border border-white/5 rounded-2xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300">
+                    Audit All Activity
                   </button>
                 </Link>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {recentTxns.map((txn: any, i: number) => (
-                  <motion.div
-                    key={txn.txn_id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors"
-                  >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white shrink-0"
-                      style={{ background: `${CATEGORY_COLORS[txn.category] || "#6366f1"}30`, color: CATEGORY_COLORS[txn.category] || "#6366f1" }}>
-                      {txn.merchant?.[0]?.toUpperCase() || "?"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-200 truncate">{txn.merchant}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <CategoryBadge category={txn.category} />
-                        <span className="text-xs text-slate-500">
-                          {format(new Date(txn.timestamp), "d MMM")}
+
+              <div className="grid gap-2">
+                {loadingTxns ? (
+                  [...Array(6)].map((_, i) => <div key={i} className="h-16 w-full bg-surface-high/20 animate-pulse rounded-2xl" />)
+                ) : (
+                  recentTxns.map((txn: any, i: number) => (
+                    <div
+                      key={txn.txn_id}
+                      className="flex items-center gap-5 p-4 rounded-2xl hover:bg-white/5 border border-transparent hover:border-white/5 transition-all group cursor-pointer"
+                    >
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-bold shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-500"
+                        style={{ 
+                          background: `${CATEGORY_COLORS[txn.category] || "#64748b"}15`, 
+                          color: CATEGORY_COLORS[txn.category] || "#64748b",
+                          border: `1px solid ${CATEGORY_COLORS[txn.category] || "#64748b"}30`
+                        }}
+                      >
+                        {txn.merchant?.[0]?.toUpperCase() || "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate group-hover:text-primary transition-colors">{txn.merchant}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{txn.category}</span>
+                          <div className="w-1 h-1 rounded-full bg-white/10" />
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            {format(new Date(txn.timestamp), "MMM dd, HH:mm")}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-foreground">₹{txn.amount.toLocaleString("en-IN")}</p>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest ${txn.status === "success" ? "text-success" : "text-warning"}`}>
+                          {txn.status}
                         </span>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-slate-200">₹{txn.amount.toLocaleString("en-IN")}</p>
-                      <span className={`text-xs ${txn.status === "success" ? "text-success" : "text-warning"}`}>
-                        {txn.status}
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
+                  ))
+                )}
               </div>
-            )}
-          </GlassCard>
-        </div>
-      </div>
+            </GlassCard>
+
+            <GlassCard className="p-8 flex flex-col justify-between relative overflow-hidden group">
+              <div className="relative z-10 space-y-8">
+                <div className="space-y-1">
+                  <h2 className="text-lg font-display font-bold text-foreground">System Bandwidth</h2>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Budget Utilization</p>
+                </div>
+                
+                <div className="relative w-48 h-48 mx-auto">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                    <circle
+                      cx="18" cy="18" r="16"
+                      className="stroke-white/5 fill-none"
+                      strokeWidth="3.5"
+                    />
+                    <circle
+                      cx="18" cy="18" r="16"
+                      className="stroke-primary fill-none transition-all duration-1000 ease-out"
+                      strokeWidth="3.5"
+                      strokeDasharray={`${summary?.budget_usage_pct || 0}, 100`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl font-display font-bold text-foreground">{summary?.budget_usage_pct || 0}%</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Burn Rate</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-[11px] font-bold uppercase tracking-widest">
+                    <span className="text-muted-foreground">Remaining</span>
+                    <span className="text-success">₹{summary?.savings?.toLocaleString("en-IN") || "0"}</span>
+                  </div>
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-primary to-accent shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all duration-1000" 
+                      style={{ width: `${100 - (summary?.budget_usage_pct || 0)}%` }} 
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Decorative background element */}
+              <div className="absolute -bottom-16 -right-16 w-48 h-48 bg-primary/10 blur-3xl rounded-full group-hover:bg-primary/20 transition-all duration-700" />
+            </GlassCard>
+          </div>
+        </ErrorBoundary>
+      </main>
     </AppShell>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+import React from "react";
 
 interface InsightCardProps {
   icon: string;
@@ -9,37 +9,37 @@ interface InsightCardProps {
   index?: number;
 }
 
-const gradients = {
-  info:    "from-accent/20 to-purple-600/10 border-accent/20",
-  success: "from-success/20 to-emerald-600/10 border-success/20",
-  warning: "from-warning/20 to-orange-600/10 border-warning/20",
-  danger:  "from-danger/20 to-red-600/10 border-danger/20",
+const colors = {
+  info:    "bg-primary/10 border-primary/20 text-primary",
+  success: "bg-success/10 border-success/20 text-success",
+  warning: "bg-warning/10 border-warning/20 text-warning",
+  danger:  "bg-danger/10 border-danger/20 text-danger",
 };
 
-const glows = {
-  info:    "rgba(99,102,241,0.15)",
-  success: "rgba(34,197,94,0.15)",
-  warning: "rgba(245,158,11,0.15)",
-  danger:  "rgba(239,68,68,0.15)",
-};
-
-export default function InsightCard({ icon, message, detail, type, index = 0 }: InsightCardProps) {
+const InsightCard = ({ icon, message, detail, type, index = 0 }: InsightCardProps) => {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
-      whileHover={{ scale: 1.02 }}
-      className={`bg-gradient-to-br ${gradients[type]} border rounded-2xl p-4`}
-      style={{ boxShadow: `0 4px 24px ${glows[type]}` }}
+    <div
+      className="glass-panel p-6 group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 fade-in"
+      style={{ 
+        animationDelay: `${index * 100}ms`
+      }}
     >
-      <div className="flex items-start gap-3">
-        <span className="text-xl">{icon}</span>
-        <div>
-          <p className="text-sm font-semibold text-slate-100">{message}</p>
-          <p className="text-xs text-slate-400 mt-1">{detail}</p>
+      <div className="flex items-start gap-4">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-2xl bg-surface-high/50 border border-white/5 shadow-xl group-hover:scale-110 transition-transform duration-500`}>
+          {icon}
+        </div>
+        <div className="space-y-1.5 flex-1 min-w-0">
+          <p className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors duration-300">{message}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed italic">{detail}</p>
         </div>
       </div>
-    </motion.div>
+      
+      {/* Subtle indicator bar */}
+      <div className={`absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-full opacity-50 group-hover:opacity-100 transition-opacity duration-300 ${
+        type === "danger" ? "bg-danger" : type === "success" ? "bg-success" : "bg-primary"
+      }`} />
+    </div>
   );
-}
+};
+
+export default React.memo(InsightCard);

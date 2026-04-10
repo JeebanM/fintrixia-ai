@@ -14,6 +14,13 @@ def verify_google_token(token: str) -> dict:
             google_requests.Request(),
             settings.GOOGLE_CLIENT_ID,
         )
+
+        if idinfo["iss"] not in ["accounts.google.com", "https://accounts.google.com"]:
+            raise ValueError("Invalid issuer")
+
+        if not idinfo.get("email_verified", False):
+            raise ValueError("Email not verified by Google")
+
         return {
             "google_id": idinfo["sub"],
             "email": idinfo["email"],

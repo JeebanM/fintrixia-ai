@@ -5,14 +5,38 @@ import { getBudgets, createBudget, deleteBudget } from "@/lib/api";
 import AppShell from "@/components/layout/AppShell";
 import Header from "@/components/layout/Header";
 import GlassCard from "@/components/ui/GlassCard";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, Target, Wallet, TrendingUp, PieChart, Check } from "lucide-react";
 
 const CATEGORIES = ["Food", "Fuel", "Shopping", "Entertainment", "Travel", "Health", "Bills", "Others"];
 const CAT_COLORS: Record<string, string> = {
-  Food: "#f59e0b", Fuel: "#ef4444", Shopping: "#6366f1", Entertainment: "#8b5cf6",
-  Travel: "#06b6d4", Health: "#22c55e", Bills: "#f97316", Others: "#94a3b8",
+  Food: "#3b82f6", Fuel: "#f43f5e", Shopping: "#8b5cf6", Entertainment: "#d946ef",
+  Travel: "#06b6d4", Health: "#10b981", Bills: "#f59e0b", Others: "#64748b",
 };
+
+const CAT_EMOJI: Record<string, string> = {
+  Food: "🍔", Fuel: "⛽", Shopping: "🛍️", Entertainment: "🎬",
+  Travel: "✈️", Health: "💊", Bills: "📄", Others: "📦",
+};
+
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+function Modal({ open, onClose, children }: ModalProps) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300"
+      onClick={onClose}
+    >
+      <div className="glass-panel w-full max-w-md p-8 space-y-6 shadow-2xl shadow-black/50 border-white/10" onClick={(e) => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function BudgetPage() {
   const qc = useQueryClient();
@@ -22,12 +46,15 @@ export default function BudgetPage() {
   const { data: budgets = [], isLoading } = useQuery({
     queryKey: ["budgets"],
     queryFn: () => getBudgets().then((r) => r.data),
-    refetchInterval: 5000,
   });
 
   const createMutation = useMutation({
     mutationFn: (d: any) => createBudget(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["budgets"] }); setShowModal(false); setForm({ category: "Food", monthly_limit: "" }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      setShowModal(false);
+      setForm({ category: "Food", monthly_limit: "" });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -35,146 +62,180 @@ export default function BudgetPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["budgets"] }),
   });
 
-  const statusColor = (s: string) =>
-    s === "danger" ? "#ef4444" : s === "warning" ? "#f59e0b" : "#22c55e";
+  const statusColorClass = (s: string) =>
+    s === "danger" ? "text-danger" : s === "warning" ? "text-warning" : "text-success";
+
+  const statusBgClass = (s: string) =>
+    s === "danger" ? "bg-danger" : s === "warning" ? "bg-warning" : "bg-success";
 
   return (
     <AppShell>
-      <Header title="Budget Planner" subtitle="Set monthly limits and track usage" />
+      <Header title="Strategic Allocation" subtitle="Calibrate your monthly burn rates" />
 
-      <div className="p-6 space-y-5">
-        <div className="flex justify-end">
-          <button onClick={() => setShowModal(true)} className="btn-gradient flex items-center gap-2 px-4 py-2 text-sm" id="add-budget-btn">
-            <Plus size={15} /> Set Budget
+      <div className="p-8 space-y-8">
+        {/* Header Section */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 px-4 py-2 bg-surface-high/30 rounded-2xl border border-white/5">
+             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Live Monitoring</span>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-8 py-3 bg-primary hover:bg-primary-hover text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/20 transition-all duration-300 flex items-center gap-3 active:scale-95"
+            id="add-budget-btn"
+          >
+            <Target size={18} /> New Allocation
           </button>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => <div key={i} className="skeleton h-32 rounded-2xl" />)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => <div key={i} className="h-48 w-full bg-surface-high/20 animate-pulse rounded-[32px]" />)}
           </div>
         ) : budgets.length === 0 ? (
-          <GlassCard className="text-center py-16 space-y-3">
-            <p className="text-slate-500 text-sm">No budgets set yet.</p>
-            <button onClick={() => setShowModal(true)} className="btn-gradient px-4 py-2 text-sm flex items-center gap-2 mx-auto">
-              <Plus size={14} /> Set your first budget
+          <div className="glass-panel text-center py-24 space-y-8 border-white/5">
+            <div className="w-24 h-24 bg-surface-high rounded-[36px] flex items-center justify-center mx-auto opacity-50 relative">
+              <PieChart size={40} className="text-muted-foreground" />
+              <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-[36px] animate-spin-slow" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-display font-bold text-foreground">Zero Constraints Detected</h2>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">Establish financial boundaries to optimize your neural advisory engine.</p>
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="px-10 py-4 bg-primary text-white rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-primary-hover transition-all duration-300 shadow-xl shadow-primary/20"
+            >
+              Initialize Constraints
             </button>
-          </GlassCard>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <AnimatePresence mode="popLayout">
-              {budgets.map((b: any, i: number) => {
-                const color = statusColor(b.status);
-                const catColor = CAT_COLORS[b.category] || "#94a3b8";
-                return (
-                  <motion.div
-                    key={b.category}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: i * 0.06 }}
-                    whileHover={{ y: -4 }}
-                    className="glass p-5 space-y-4 rounded-2xl relative group"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {budgets.map((b: any, i: number) => {
+              const catColor = CAT_COLORS[b.category] || "#64748b";
+              const isExceeded = b.usage_percent >= 100;
+              return (
+                <div
+                  key={b.category}
+                  className="glass-panel p-8 space-y-6 relative group hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 border-white/5 fade-in"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <button
+                    onClick={() => deleteMutation.mutate(b.category)}
+                    className="absolute top-6 right-6 p-2 rounded-xl bg-surface-high text-muted-foreground hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100"
                   >
-                    <button
-                      onClick={() => deleteMutation.mutate(b.category)}
-                      className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-600 hover:text-danger hover:bg-danger/10 transition-all opacity-0 group-hover:opacity-100"
+                    <Trash2 size={16} />
+                  </button>
+
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-xl transition-transform duration-500 group-hover:scale-110"
+                      style={{ 
+                        background: `${catColor}15`,
+                        border: `1px solid ${catColor}30`,
+                        boxShadow: `0 10px 20px ${catColor}10`
+                      }}
                     >
-                      <Trash2 size={13} />
-                    </button>
-
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-                        style={{ background: `${catColor}20`, color: catColor }}>
-                        {b.category === "Food" ? "🍔" : b.category === "Fuel" ? "⛽" : b.category === "Shopping" ? "🛍️" :
-                         b.category === "Entertainment" ? "🎬" : b.category === "Travel" ? "✈️" :
-                         b.category === "Health" ? "💊" : b.category === "Bills" ? "📄" : "📦"}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-200">{b.category}</p>
-                        <p className="text-xs" style={{ color }}>
-                          {b.status === "danger" ? "Budget exceeded!" : b.status === "warning" ? "Almost at limit" : "On track"}
-                        </p>
-                      </div>
+                      {CAT_EMOJI[b.category] || "📦"}
                     </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="w-full h-2 bg-surface-2 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(b.usage_percent, 100)}%` }}
-                          transition={{ duration: 0.8, ease: "easeOut" }}
-                          className="h-full rounded-full"
-                          style={{ background: color }}
-                        />
-                      </div>
-                      <div className="flex justify-between text-xs text-slate-400">
-                        <span>₹{b.current_spend.toLocaleString("en-IN")}</span>
-                        <span className="font-medium" style={{ color }}>{b.usage_percent}%</span>
-                        <span>₹{b.monthly_limit.toLocaleString("en-IN")}</span>
-                      </div>
+                    <div>
+                      <p className="text-lg font-display font-bold text-foreground tracking-tight">{b.category}</p>
+                      <p className={`text-[10px] font-bold uppercase tracking-widest ${statusColorClass(b.status)}`}>
+                        {isExceeded ? "Violation Detected" : b.status === "warning" ? "Approaching Limit" : "Stable Flow"}
+                      </p>
                     </div>
+                  </div>
 
-                    <p className="text-xs text-slate-500">
-                      ₹{Math.max(0, b.monthly_limit - b.current_spend).toLocaleString("en-IN")} remaining
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-[11px] font-bold uppercase tracking-widest">
+                      <span className="text-muted-foreground">Utilization</span>
+                      <span className={statusColorClass(b.status)}>{b.usage_percent}%</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-surface-high rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_currentColor] ${statusBgClass(b.status)}`}
+                        style={{ width: `${Math.min(b.usage_percent, 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs font-bold">
+                      <span className="text-foreground">₹{b.current_spend.toLocaleString("en-IN")}</span>
+                      <span className="text-muted-foreground/50">/</span>
+                      <span className="text-muted-foreground">₹{b.monthly_limit.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] flex items-center justify-between">
+                      Remaining Bandwidth
+                      <span className={isExceeded ? "text-danger" : "text-success"}>
+                        ₹{Math.max(0, b.monthly_limit - b.current_spend).toLocaleString("en-IN")}
+                      </span>
                     </p>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+                  </div>
+                  
+                  {/* Glowing corner indicator */}
+                  <div className={`absolute top-0 left-0 w-12 h-12 -translate-x-1/2 -translate-y-1/2 blur-2xl rounded-full opacity-20 transition-all group-hover:opacity-40 ${statusBgClass(b.status)}`} />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Budget Modal */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 24 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 24 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="glass-strong w-full max-w-sm p-6 space-y-5"
-              onClick={(e) => e.stopPropagation()}
+      <Modal open={showModal} onClose={() => setShowModal(false)}>
+        <div className="flex items-center justify-between pb-6 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-xl">
+              <Target size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-display font-bold text-foreground">Set Constraint</h2>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Define vector limits</p>
+            </div>
+          </div>
+          <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white/5 rounded-xl text-muted-foreground transition-colors">
+            <X size={22} />
+          </button>
+        </div>
+
+        <div className="space-y-6 pt-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Financial Vector</label>
+            <select
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full bg-background/50 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-foreground outline-none focus:border-primary/50 transition-all cursor-pointer appearance-none shadow-inner"
+              id="budget-category"
             >
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Set Budget</h2>
-                <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-200"><X size={18} /></button>
-              </div>
-              <div className="space-y-3">
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  className="w-full bg-surface border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-300 outline-none focus:border-accent transition-colors"
-                  id="budget-category"
-                >
-                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <input
-                  type="number" placeholder="Monthly limit (₹)" value={form.monthly_limit}
-                  onChange={(e) => setForm({ ...form, monthly_limit: e.target.value })}
-                  className="w-full bg-surface/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-accent transition-colors"
-                  id="budget-limit"
-                />
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                onClick={() => createMutation.mutate({ category: form.category, monthly_limit: parseFloat(form.monthly_limit) })}
-                disabled={!form.monthly_limit || createMutation.isPending}
-                className="btn-gradient w-full py-3 text-sm disabled:opacity-50"
-                id="save-budget-btn"
-              >
-                {createMutation.isPending ? "Saving…" : "Save Budget"}
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Monthly Ceiling (INR)</label>
+            <input
+              type="number" placeholder="0.00" value={form.monthly_limit}
+              onChange={(e) => setForm({ ...form, monthly_limit: e.target.value })}
+              className="w-full bg-background/50 border border-white/5 rounded-2xl px-6 py-4 text-lg font-display font-bold text-foreground placeholder-muted-foreground/30 outline-none focus:border-primary/50 transition-all shadow-inner"
+              id="budget-limit"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={() => createMutation.mutate({ category: form.category, monthly_limit: parseFloat(form.monthly_limit) })}
+          disabled={!form.monthly_limit || createMutation.isPending}
+          className="w-full py-4 bg-primary hover:bg-primary-hover disabled:bg-surface-high disabled:text-muted-foreground text-white rounded-2xl text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/20 transition-all duration-300 flex items-center justify-center gap-3"
+          id="save-budget-btn"
+        >
+          {createMutation.isPending ? (
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>Apply Constraint <Check size={18} /></>
+          )}
+        </button>
+      </Modal>
     </AppShell>
   );
 }

@@ -73,15 +73,16 @@ async def update_transaction(
     if update_data:
         await db.transactions.update_one({"txn_id": txn_id}, {"$set": update_data})
 
-    # If confirmed as success, update budget spend + trigger alerts
+    # If confirmed as success, emit event to handle downstream updates decoupled
     if body.status == "success":
-        category = txn.get("category", "Others")
-        amount = txn["amount"]
-        await db.budgets.update_one(
-            {"user_id": current_user["user_id"], "category": category},
-            {"$inc": {"current_spend": amount}},
+        from app.services.event_dispatcher import emit_event
+        from fastapi import BackgroundTasks
+        # We don't have background tasks in standard dependency here, but we can await it directly or leave it to standard fastAPI execution if emit_event generates a task.
+        # emit_event uses asyncio.create_task which is fire-and-forget in the event loop.
+        await emit_event(
+            "transaction_success", 
+            {"user_id": current_user["user_id"], "amount": txn["amount"], "category": txn.get("category", "Others"), "txn_id": txn_id}
         )
-        await check_budget_alerts(current_user["user_id"], category, db)
 
     updated = await db.transactions.find_one({"txn_id": txn_id})
     updated["id"] = str(updated.pop("_id", ""))

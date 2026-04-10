@@ -5,16 +5,15 @@ import { sendAIQuery, getRecommendations } from "@/lib/api";
 import AppShell from "@/components/layout/AppShell";
 import Header from "@/components/layout/Header";
 import GlassCard from "@/components/ui/GlassCard";
-import { Bot, Send, Zap, TrendingUp, PiggyBank, ArrowLeftRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Bot, Send, Zap, TrendingUp, Sparkles, User, BrainCircuit } from "lucide-react";
 
 const SUGGESTED_QUERIES = [
   "How much did I spend this week?",
   "Where can I save money?",
   "Compare last week vs this week",
-  "What are my top spending categories?",
+  "Top spending categories?",
   "Am I within my budget?",
-  "What's my daily average spend?",
+  "Daily average spend?",
 ];
 
 interface Message {
@@ -29,7 +28,7 @@ export default function AssistantPage() {
     {
       id: "welcome",
       role: "ai",
-      text: "Hi! I'm Fintrixia AI 👋 I can answer questions about your spending, budgets, and financial patterns. Try asking me something!",
+      text: "Greetings. I am Fintrixia's Neural Engine. I've analyzed your recent financial trajectories and I'm ready to provide strategic insights. What would you like to explore?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -63,7 +62,7 @@ export default function AssistantPage() {
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        { id: Date.now().toString(), role: "ai", text: "Sorry, I couldn't process that right now. Please try again." },
+        { id: Date.now().toString(), role: "ai", text: "Protocol interrupted. Neural link unstable. Please retry." },
       ]);
     },
   });
@@ -79,149 +78,163 @@ export default function AssistantPage() {
 
   return (
     <AppShell>
-      <Header title="AI Assistant" subtitle="Ask me anything about your finances" />
+      <Header title="Neural Assistant" subtitle="Interfacing with autonomous financial intelligence" />
 
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-5 h-[calc(100vh-80px)]">
+      <div className="p-8 grid grid-cols-1 lg:grid-cols-4 gap-8 h-[calc(100vh-120px)]">
         {/* Chat Panel */}
-        <div className="lg:col-span-2 flex flex-col glass rounded-2xl overflow-hidden">
+        <div className="lg:col-span-3 flex flex-col glass-panel overflow-hidden border-white/5">
           {/* Chat Header */}
-          <div className="p-4 border-b border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-ai-gradient flex items-center justify-center pulse-glow">
-              <Zap size={16} className="text-white" />
+          <div className="p-5 border-b border-white/5 bg-surface-high/30 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-2xl shadow-primary/20">
+                <BrainCircuit size={24} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground tracking-tight">Fintrixia Neural V1</p>
+                <p className="text-[10px] text-success font-bold uppercase tracking-widest flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                  Synapse Active
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-200">Fintrixia AI</p>
-              <p className="text-xs text-success flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-success rounded-full inline-block" />
-                Online
-              </p>
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-high/50 border border-white/5">
+              <Sparkles size={12} className="text-primary" />
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Enhanced Mode</span>
             </div>
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <AnimatePresence mode="popLayout">
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  layout
-                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-surface-low/10">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-4 fade-in ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+              >
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 mt-1 shadow-lg ${
+                  msg.role === "ai" 
+                    ? "bg-gradient-to-br from-primary to-accent text-white" 
+                    : "bg-surface-high border border-white/10 text-muted-foreground"
+                }`}>
+                  {msg.role === "ai" ? <Bot size={20} /> : <User size={20} />}
+                </div>
+                <div
+                  className={`max-w-[75%] px-6 py-4 rounded-3xl text-sm leading-relaxed shadow-xl transition-all duration-300 ${
+                    msg.role === "user"
+                      ? "bg-primary text-white rounded-tr-none hover:bg-primary-hover"
+                      : "bg-surface-high/80 text-foreground border border-white/5 rounded-tl-none backdrop-blur-xl"
+                  }`}
                 >
-                  {msg.role === "ai" && (
-                    <div className="w-7 h-7 rounded-full bg-ai-gradient flex items-center justify-center shrink-0 mt-1">
-                      <Bot size={14} className="text-white" />
+                  <p className="whitespace-pre-line font-medium">{msg.text}</p>
+                  {msg.source && (
+                    <div className="flex items-center gap-2 mt-2 opacity-50">
+                      <div className="w-1 h-1 rounded-full bg-current" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">
+                        {msg.source === "rule" ? "Deterministic Engine" : "LLM Inference"}
+                      </span>
                     </div>
                   )}
-                  <div
-                    className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
-                      msg.role === "user"
-                        ? "bg-accent text-white rounded-tr-sm"
-                        : "bg-surface-2 text-slate-200 rounded-tl-sm border border-white/5"
-                    }`}
-                  >
-                    <p className="whitespace-pre-line">{msg.text}</p>
-                    {msg.source && (
-                      <span className="text-xs opacity-50 mt-1 block">
-                        {msg.source === "rule" ? "⚡ instant" : "🤖 AI"}
-                      </span>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                </div>
+              </div>
+            ))}
 
-              {/* Typing indicator */}
-              {isTyping && (
-                <motion.div
-                  key="typing"
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="flex gap-3"
-                >
-                  <div className="w-7 h-7 rounded-full bg-ai-gradient flex items-center justify-center shrink-0">
-                    <Bot size={14} className="text-white" />
-                  </div>
-                  <div className="bg-surface-2 border border-white/5 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5">
-                    <span className="typing-dot" />
-                    <span className="typing-dot" />
-                    <span className="typing-dot" />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Typing indicator */}
+            {isTyping && (
+              <div className="flex gap-4 fade-in">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 shadow-lg">
+                  <Bot size={20} className="text-white" />
+                </div>
+                <div className="bg-surface-high/80 border border-white/5 px-6 py-4 rounded-3xl rounded-tl-none flex items-center gap-2 backdrop-blur-xl">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
+                </div>
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
-          {/* Suggested Queries */}
-          <div className="px-4 pb-2">
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Controls */}
+          <div className="p-6 space-y-4 bg-surface-high/30 border-t border-white/5">
+            {/* Suggested Queries */}
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
               {SUGGESTED_QUERIES.map((q) => (
                 <button
                   key={q}
                   onClick={() => sendMessage(q)}
-                  className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors whitespace-nowrap"
+                  className="shrink-0 text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-xl bg-surface-high border border-white/5 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 whitespace-nowrap"
                 >
                   {q}
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Input */}
-          <div className="p-4 border-t border-white/5">
-            <div className="flex gap-3">
-              <input
-                id="ai-query-input"
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
-                placeholder="Ask about your finances…"
-                className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-accent transition-colors"
-              />
-              <motion.button
-                whileTap={{ scale: 0.95 }}
+            {/* Input */}
+            <div className="flex gap-4">
+              <div className="flex-1 relative group">
+                <input
+                  id="ai-query-input"
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
+                  placeholder="Analyze financial flow..."
+                  className="w-full bg-background/50 border border-white/5 rounded-2xl px-6 py-4 text-sm text-foreground placeholder-muted-foreground/50 outline-none focus:border-primary/50 focus:bg-background/80 transition-all duration-300 shadow-inner group-hover:border-white/10"
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                   <div className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest hidden md:block">Neural Link Active</div>
+                </div>
+              </div>
+              <button
                 onClick={() => sendMessage(input)}
                 disabled={!input.trim() || queryMutation.isPending}
-                className="btn-gradient px-4 py-3 disabled:opacity-50"
+                className="w-14 h-14 bg-primary hover:bg-primary-hover disabled:bg-surface-high disabled:text-muted-foreground text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 active:scale-95 transition-all duration-300"
                 id="send-ai-btn"
               >
-                <Send size={16} />
-              </motion.button>
+                <Send size={20} className={queryMutation.isPending ? "animate-pulse" : ""} />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Recommendations Panel */}
-        <div className="space-y-4 overflow-y-auto">
-          <h2 className="font-semibold text-slate-200 text-sm">💡 Recommendations</h2>
+        {/* Strategy Panel */}
+        <div className="space-y-6 overflow-y-auto custom-scrollbar pr-2">
+          <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+            <Zap size={14} className="text-primary" /> Strategic Directives
+          </h2>
           {recs.length === 0 ? (
-            <GlassCard className="text-center text-sm text-slate-500 py-8">
-              Add transactions to get personalized recommendations
-            </GlassCard>
+            <div className="glass-panel p-8 text-center space-y-4">
+              <div className="w-12 h-12 bg-surface-high rounded-2xl flex items-center justify-center mx-auto opacity-50">
+                <TrendingUp size={20} className="text-muted-foreground" />
+              </div>
+              <p className="text-xs font-medium text-muted-foreground leading-relaxed italic">
+                Synchronize ledger data to generate neural recommendations.
+              </p>
+            </div>
           ) : (
             recs.map((rec: any, i: number) => (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="glass p-4 space-y-2 rounded-2xl border border-accent/10"
+                className="glass-panel p-5 space-y-4 border-white/5 fade-in hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 group cursor-pointer"
+                style={{ animationDelay: `${i * 100}ms` }}
               >
-                <div className="flex items-start gap-2">
-                  <span className="text-accent mt-0.5"><TrendingUp size={14} /></span>
-                  <p className="text-sm font-medium text-slate-200">{rec.action}</p>
+                <div className="flex items-center justify-between">
+                  <div className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-lg ${
+                    rec.priority === "high" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
+                  }`}>
+                    {rec.priority} Priority
+                  </div>
+                  <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
                 </div>
-                <p className="text-xs text-slate-400 pl-5">{rec.impact}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full ml-5 inline-block font-medium ${
-                  rec.priority === "high" ? "bg-danger/10 text-danger" : "bg-warning/10 text-warning"
-                }`}>{rec.priority} priority</span>
-              </motion.div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{rec.action}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{rec.impact}</p>
+                </div>
+                
+                <button className="w-full py-2 bg-surface-high hover:bg-primary text-foreground hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-300 border border-white/5">
+                  Execute Directive
+                </button>
+              </div>
             ))
           )}
         </div>

@@ -2,18 +2,20 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import JWTError, jwt
+import jwt  # PyJWT
+from jwt.exceptions import PyJWTError, ExpiredSignatureError
 from app.config import get_settings
 from app.database import get_db
+from loguru import logger
 
 settings = get_settings()
 security = HTTPBearer()
-
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.JWT_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
+    # Warning: Ensure settings.JWT_SECRET is actually configured!
     return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 
@@ -31,7 +33,13 @@ async def get_current_user(
         user_id: str = payload.get("sub")
         email: str = payload.get("email")
         if user_id is None:
+            logger.warning("Decoded token is missing 'sub' identifier.")
             raise credentials_exception
         return {"user_id": user_id, "email": email}
-    except JWTError:
+    except ExpiredSignatureError:
+        logger.warning("Expired JWT token presented.")
         raise credentials_exception
+    except PyJWTError as e:
+        logger.warning(f"Invalid JWT Token presented: {e}")
+        raise credentials_exception
+

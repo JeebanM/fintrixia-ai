@@ -1,33 +1,40 @@
 "use client";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getNotifications, markNotifRead, clearNotifications } from "@/lib/api";
 import AppShell from "@/components/layout/AppShell";
 import Header from "@/components/layout/Header";
-import GlassCard from "@/components/ui/GlassCard";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bell, CheckCircle, AlertTriangle, XCircle, Info, Trash2, Check } from "lucide-react";
+import { Bell, CheckCircle, AlertTriangle, XCircle, Info, Trash2, Check, Sparkles } from "lucide-react";
 
 const ICON_MAP: Record<string, React.ReactNode> = {
-  info:    <Info size={16} className="text-accent" />,
-  success: <CheckCircle size={16} className="text-success" />,
-  warning: <AlertTriangle size={16} className="text-warning" />,
-  danger:  <XCircle size={16} className="text-danger" />,
+  info:    <Info size={18} className="text-primary" />,
+  success: <CheckCircle size={18} className="text-success" />,
+  warning: <AlertTriangle size={18} className="text-warning" />,
+  danger:  <XCircle size={18} className="text-danger" />,
 };
 
-const BORDER_MAP: Record<string, string> = {
-  info:    "border-accent/20",
-  success: "border-success/20",
-  warning: "border-warning/20",
-  danger:  "border-danger/20",
+const COLOR_MAP: Record<string, string> = {
+  info:    "text-primary",
+  success: "text-success",
+  warning: "text-warning",
+  danger:  "text-danger",
+};
+
+const BG_COLOR_MAP: Record<string, string> = {
+  info:    "bg-primary/10",
+  success: "bg-success/10",
+  warning: "bg-warning/10",
+  danger:  "bg-danger/10",
 };
 
 export default function NotificationsPage() {
   const qc = useQueryClient();
+  const [clearing, setClearing] = useState(false);
 
   const { data: notifs = [], isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => getNotifications().then((r) => r.data),
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   const readMutation = useMutation({
@@ -36,92 +43,134 @@ export default function NotificationsPage() {
   });
 
   const clearMutation = useMutation({
-    mutationFn: () => clearNotifications(),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    mutationFn: async () => {
+      setClearing(true);
+      return clearNotifications();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+      setClearing(false);
+    },
+    onError: () => setClearing(false)
   });
 
-  const unread = notifs.filter((n: any) => !n.is_read);
+  const unreadCount = notifs.filter((n: any) => !n.is_read).length;
 
   return (
     <AppShell>
-      <Header title="Notifications" subtitle={`${unread.length} unread`} />
+      <Header 
+        title="Signal Registry" 
+        subtitle="System telemetry and critical alerts" 
+      />
 
-      <div className="p-6 space-y-5">
+      <div className="p-8 max-w-5xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {unread.length > 0 && (
-              <span className="text-xs px-2.5 py-1 rounded-full bg-danger/10 text-danger font-semibold">
-                {unread.length} unread
-              </span>
-            )}
+          <div className="flex items-center gap-4">
+             <div className="px-4 py-2 bg-surface-high/30 rounded-2xl border border-white/5 flex items-center gap-3">
+               <div className={`w-2 h-2 rounded-full ${unreadCount > 0 ? 'bg-danger animate-pulse' : 'bg-success'}`} />
+               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
+                 {unreadCount} Active Signals
+               </span>
+             </div>
           </div>
+          
           {notifs.some((n: any) => n.is_read) && (
             <button
               onClick={() => clearMutation.mutate()}
-              disabled={clearMutation.isPending}
-              className="text-xs text-slate-500 hover:text-danger flex items-center gap-1.5 transition-colors"
-              id="clear-notifs-btn"
+              disabled={clearMutation.isPending || clearing}
+              className="px-6 py-2.5 rounded-xl bg-surface-high/50 hover:bg-danger/10 text-muted-foreground hover:text-danger text-[10px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 border border-white/5"
             >
-              <Trash2 size={12} /> Clear read
+              <Trash2 size={14} /> Clear Read Logs
             </button>
           )}
         </div>
 
-        <GlassCard>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-24 w-full bg-surface-high/20 animate-pulse rounded-[24px]" />
+            ))}
+          </div>
+        ) : notifs.length === 0 ? (
+          <div className="glass-panel text-center py-32 space-y-8 border-white/5">
+            <div className="w-24 h-24 bg-surface-high rounded-[36px] flex items-center justify-center mx-auto opacity-50 relative group">
+              <Bell size={40} className="text-muted-foreground transition-transform group-hover:scale-110" />
+              <div className="absolute inset-0 border-2 border-dashed border-primary/20 rounded-[36px] animate-spin-slow" />
             </div>
-          ) : notifs.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
-              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
-                <Bell size={24} className="text-accent" />
-              </div>
-              <p className="text-slate-500 text-sm">No notifications yet</p>
-              <p className="text-xs text-slate-600">Budget alerts and spending insights will appear here</p>
-            </div>
-          ) : (
             <div className="space-y-2">
-              <AnimatePresence mode="popLayout">
-                {notifs.map((n: any, i: number) => (
-                  <motion.div
-                    key={n.notif_id}
-                    layout
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 8 }}
-                    transition={{ delay: i * 0.04 }}
-                    className={`flex items-start gap-4 p-4 rounded-xl border transition-all ${
-                      n.is_read
-                        ? "border-white/5 opacity-60"
-                        : `${BORDER_MAP[n.type] || "border-white/10"} bg-white/[0.02]`
-                    }`}
-                  >
-                    <div className="shrink-0 mt-0.5">{ICON_MAP[n.type] || ICON_MAP.info}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-semibold ${n.is_read ? "text-slate-400" : "text-slate-200"}`}>
-                        {n.title}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
-                      <p className="text-xs text-slate-600 mt-1">
-                        {new Date(n.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-                      </p>
-                    </div>
-                    {!n.is_read && (
-                      <button
-                        onClick={() => readMutation.mutate(n.notif_id)}
-                        className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-success hover:bg-success/10 transition-all"
-                        title="Mark as read"
-                      >
-                        <Check size={14} />
-                      </button>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              <h2 className="text-xl font-display font-bold text-foreground">Awaiting Inputs</h2>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">The neural core is silent. No anomalous patterns or budget violations detected.</p>
             </div>
-          )}
-        </GlassCard>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {notifs.map((n: any, i: number) => (
+              <div
+                key={n.notif_id}
+                className={`glass-panel group p-6 flex items-start gap-6 transition-all duration-500 border-white/5 hover:border-white/10 hover:translate-x-2 ${
+                  n.is_read ? "opacity-50" : "bg-white/[0.03]"
+                } fade-in`}
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <div className={`shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${BG_COLOR_MAP[n.type] || "bg-primary/10"}`}>
+                  {ICON_MAP[n.type] || <Info size={18} className="text-primary" />}
+                </div>
+
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm font-bold font-display ${n.is_read ? "text-muted-foreground" : "text-foreground"}`}>
+                      {n.title}
+                    </p>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      {new Date(n.created_at).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                    {n.message}
+                  </p>
+                  <p className="text-[9px] font-bold text-muted-foreground/40 uppercase tracking-[0.2em] pt-2">
+                    {new Date(n.created_at).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+
+                {!n.is_read && (
+                  <button
+                    onClick={() => readMutation.mutate(n.notif_id)}
+                    className="shrink-0 p-3 rounded-xl bg-surface-high/50 text-muted-foreground hover:text-success hover:bg-success/10 transition-all opacity-0 group-hover:opacity-100"
+                    title="Acknowledge Signal"
+                  >
+                    <Check size={16} />
+                  </button>
+                )}
+                
+                {/* Visual indicator for unread */}
+                {!n.is_read && (
+                  <div className={`absolute top-0 left-0 w-1 h-full rounded-full ${COLOR_MAP[n.type] || "bg-primary"}`} />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Global Insight Panel */}
+        {notifs.length > 0 && (
+          <div className="glass-panel p-8 flex items-center justify-between bg-primary/5 border-primary/10">
+             <div className="flex items-center gap-6">
+                <div className="w-16 h-16 rounded-[24px] bg-primary/20 flex items-center justify-center text-primary glow-pulse">
+                  <Sparkles size={32} />
+                </div>
+                <div>
+                   <h3 className="text-lg font-display font-bold text-foreground">Intelligence Feed</h3>
+                   <p className="text-xs text-muted-foreground">All signals are being processed by the Fintrixia Neural Engine.</p>
+                </div>
+             </div>
+             <div className="hidden md:block h-12 w-px bg-white/5" />
+             <div className="hidden md:flex flex-col items-end">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">Efficiency Rating</span>
+                <span className="text-2xl font-display font-bold text-success">Optimal</span>
+             </div>
+          </div>
+        )}
       </div>
     </AppShell>
   );
