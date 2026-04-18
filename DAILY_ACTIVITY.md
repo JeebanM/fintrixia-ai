@@ -1,2 +1,3 @@
 [2026-04-10] feat: scaffold Next.js TypeScript app and Fastify backend
 [2026-04-14] feat: build financial time-series chart components and KPI cards
+[2026-04-18] feat: integrate market data streams and AI forecast models
