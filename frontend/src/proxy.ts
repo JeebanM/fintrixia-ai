@@ -4,12 +4,7 @@ import type { NextRequest } from "next/server";
 const PROTECTED_ROUTES = ["/dashboard", "/transactions", "/assistant", "/budget", "/notifications"];
 const PUBLIC_ROUTES = ["/login"];
 
-export function middleware(req: NextRequest) {
-  const token =
-    req.cookies.get("fintrixia-auth")?.value ||
-    req.headers.get("authorization");
-
-  // Try to parse token from localStorage via cookie (set by client)
+export function proxy(req: NextRequest) {
   const authCookie = req.cookies.get("fintrixia-auth-token");
   const isAuthenticated = !!authCookie?.value;
 
