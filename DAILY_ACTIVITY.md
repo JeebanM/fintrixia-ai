@@ -9,3 +9,4 @@
 [2026-09-14] docs: refine README examples and quick-start instructions
 [2026-09-15] refactor: improve logging output and diagnostics formatting
 [2026-09-16] chore: routine code maintenance and style compliance
+[2026-09-17] chore: update project dependencies and security audit
