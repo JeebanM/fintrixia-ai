@@ -26,3 +26,4 @@
 [2026-10-01] perf: optimize memory footprint and async event handling
 [2026-10-02] fix: harden input validation and error boundaries
 [2026-10-03] chore: sync environment configs and build pipeline artifacts
+[2026-10-04] docs: refine README examples and quick-start instructions
