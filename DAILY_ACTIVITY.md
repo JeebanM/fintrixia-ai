@@ -47,3 +47,4 @@
 [2026-10-22] fix: harden input validation and error boundaries
 [2026-10-23] chore: sync environment configs and build pipeline artifacts
 [2026-10-24] docs: refine README examples and quick-start instructions
+[2026-10-25] refactor: improve logging output and diagnostics formatting
